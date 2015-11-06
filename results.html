@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <title>ACCESS Optimization: Oceans</title>
+
+    <meta name="description" content="A summary of NCI's recent work on
+                                      high-resolution ocean modelling">
+    <meta name="author" content="Marshall Ward">
+
+    <link rel="stylesheet" href="css/reveal.css">
+    <link rel="stylesheet" href="css/theme/black.css" id="theme">
+    <!--<link rel="stylesheet" href="lib/css/solarized_dark.css"> -->
+  </head>
+  <body>
+    <div class="reveal"
+         style="background: url(figures/nci/bg_nci.png);
+                background-size: cover;">
+
+      <header style="width: 10%; position: absolute; top: 2%; left: 2%;">
+        <img src="figures/nci/nci_logo_small.png">
+      </header>
+
+      <!--
+      <footer style="position: absolute; bottom: 2%; right: 2%;">
+          <code>nci.org.au</code>
+      </footer>
+      -->
+
+      <div class="slides">
+
+        <section>
+          <div class="reveal" style="text-align: right;">
+            <img src="figures/nci/nci_logo.png"
+                 style="background:none; border:none; box-shadow:none;
+                        width: 30%;"
+                 alt="NCI">
+          </div>
+
+          <h3 style="text-align: left; color: white;">
+            ACCESS Optimization: Oceans
+          </h3>
+
+          <p style="text-align: right;">Marshall Ward
+            <br>National Computational Infrastructure
+          </p>
+        </section>
+
+        <!-- MOM scaling overview -->
+
+        <section>
+          <h3>0.25° Global MOM-SIS Model</h3>
+          <ul>
+            <li>Orthogonal curvilinear grids (e.g. tripolar)
+            <li>1440 x 1080 x 50 grid points</li>
+            <li>480 ocean steps (10 days)</li>
+            <li>Per ocean step:
+              <ul>
+                <li>72 dynamic sea ice steps</li>
+                <li>1 advective sea ice step</li>
+              </ul>
+            </li>
+          </ul>
+          <p>TODO</p>
+        </section>
+
+        <section>
+          <h3>Main loop scaling</h3>
+          <img src="figures/scaling_loop.svg"
+               style="background: none; border: none; box-shadow: none;">
+        </section>
+
+        <section>
+          <h3>Initialization "scaling"</h3>
+          <img src="figures/scaling_init.svg"
+               style="background: none; border: none; box-shadow: none;">
+        </section>
+
+        <section>
+          <h3>0.1° Modelling</h3>
+          <p>TODO</p>
+        </section>
+
+        <section>
+          <h3>Scaling prehistory</h3>
+          <p>
+            <ul>
+              <li>MPI Preconnection</li>
+              <li>MXM/FCA acceleration</li>
+              <li>Partially committed nodes</li>
+              <li>Disabling OpenIB (!)</li>
+              <li>Hyperthreading</li>
+              <li>Hangs beyond 1920 CPUs</li>
+            </ul>
+          </p>
+          <p>
+            <h3>Major fixes</h3>
+            <ul>
+              <li>Flux exchange initalization</li>
+              <li>Global field manipulation</li>
+            </ul>
+          </p>
+        </section>
+
+        <section>
+          <h3>Flux Exchange</h3>
+          <img src="figures/flux_exchange.svg"
+                  style="width: 55%;"
+                  alt="Flux exchange map"></p>
+          <p style="clear: both;">
+            <ul>
+              <li>Coupler reports fractional overlap to every ocean tile</li>
+              <li>Previously used <code>MPI_Isend</code>; failed at 2000
+                CPUs</li>
+              <li>Replaced with <code>MPI_Alltoall</code>; scales to &gt;20k
+                CPUs</li>
+            </ul>
+          </p>
+        </section>
+
+        <section>
+          <h3>Global field gather/scatters</h3>
+          <p><img src="figures/mpp_global_field.svg"
+                  style="width: 55%"
+                  alt="Nonuniform tile scattering">
+          </p>
+          <!--
+          <ul style="width: 35%; vertical-align: middle;">
+            <li>1 2 7 8 13 14</li>
+            <li>3 4 5 9 10 11 15 16 17</li>
+            <li>6 12 18</li>
+            <li>19 20</li>
+            <li>21 22 23</li>
+            <li>24</li>
+            <li>25 26 31 32</li>
+            <li>27 28 29 33 34 35</li>
+            <li>30 36</li>
+          </ul>
+          -->
+          <ul>
+            <li>Non-contiguous, cannot use <code>MPI_Gather/Scatter</code></li>
+            <li>Was implemented using <code>MPI_Isend</code></li>
+            <li>Used in SIS, fails at 15k CPUs, but the call was unneeded!</li>
+          </ul>
+        </section>
+
+        <!-- MOM-SIS concurrency -->
+
+        <section>
+          <h3>Submodel scaling</h3>
+          <img src="figures/submodels.svg"
+               style="background: none; border: none; box-shadow: none;">
+        </section>
+
+        <section>
+          <h3>MOM-SIS Concurrency</h3>
+          <img src="figures/sis_concurrency.svg"
+               style="background: none; border: none; box-shadow: none;">
+          <p>TODO: Combine figures</p>
+        </section>
+
+        <section>
+          <h3>Concurrency scaling</h3>
+          <p>TODO</p>
+        </section>
+
+        <section>
+          <h3>1-year simulations</h3>
+          <table>
+            <colgroup>
+              <col width="20%" />
+              <col width="28%" />
+              <col width="28%" />
+              <col width="24%" />
+            </colgroup>
+            <thead valign="bottom">
+              <tr>
+                <th class="head">PEs</th>
+                <th class="head">Runtime</th>
+                <th class="head">CPU Hrs</th>
+                <th class="head">yr/day</th>
+              </tr>
+            </thead>
+            <tbody valign="top">
+              <tr>
+                <td>960s</td>
+                <td>7364.9</td>
+                <td>1966.1</td>
+                <td>11.7</td>
+              </tr>
+              <tr>
+                <td>1920s</td>
+                <td>3986.8</td>
+                <td>2126.3*</td>
+                <td>21.7</td>
+              </tr>
+              <tr>
+                <td>2240c</td>
+                <td>3347.5</td>
+                <td>2112.4</td>
+                <td>25.8</td>
+              </tr>
+              <tr>
+                <td>3840s</td>
+                <td>2504.3</td>
+                <td>2776.5</td>
+                <td>34.5</td>
+              </tr>
+              <tr>
+                <td>4480c</td>
+                <td>1919.6</td>
+                <td>2510.0</td>
+                <td>45.0</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p>Exceeded the 40 yr/day performance target</p>
+        </section>
+
+        <!-- Intel and Open MPI comparison -->
+
+        <section>
+          <section>
+            <h3>Intel MPI vs. Open MPI</h3>
+            <img src="figures/intel_ompi_loop.svg">
+          </section>
+
+          <section>
+            <h3>Intel MPI vs Open MPI</h3>
+            <table style="font-size: 60%; margin: 0;">
+              <colgroup>
+                <col width="7%" />
+                <col width="7%" />
+                <col width="7%" />
+                <col width="7%" />
+                <col width="7%" />
+                <col width="7%" />
+                <col width="7%" />
+                <col width="7%" />
+                <col width="7%" />
+                <col width="7%" />
+                <col width="7%" />
+                <col width="7%" />
+                <col width="7%" />
+                <col width="7%" />
+              </colgroup>
+              <tbody valign="top">
+                <tr>
+                  <td colspan="2" style="text-align: center">120</td>
+                  <td colspan="2" style="text-align: center">240</td>
+                  <td colspan="2" style="text-align: center">480</td>
+                  <td colspan="2" style="text-align: center">960</td>
+                  <td colspan="2" style="text-align: center">1920</td>
+                  <td colspan="2" style="text-align: center">3840</td>
+                  <td colspan="2" style="text-align: center">7680</td>
+                </tr>
+                <tr>
+                  <td>Intel</td> <td>OMPI</td>
+                  <td>Intel</td> <td>OMPI</td>
+                  <td>Intel</td> <td>OMPI</td>
+                  <td>Intel</td> <td>OMPI</td>
+                  <td>Intel</td> <td>OMPI</td>
+                  <td>Intel</td> <td>OMPI</td>
+                  <td>Intel</td> <td>OMPI</td>
+                </tr>
+                <tr>
+                  <td>1601.6 1603.1 1605.4 1609.9 1612.1 1759.1 1795.2</td>
+                  <td>1698.8 1700.4 1702.4 1703.5 1704.2 1704.5 1709.3</td>
+                  <td>724.2 724.8 798.1 814.5 837.4 848.3 878.0</td>
+                  <td>779.9 780.1 780.8 781.6 781.7 782.3 788.2</td>
+                  <td>354.8 355.3 358.9 369.1 372.8 374.4 379.1 384.5 394.3
+                    413.4 428.6 430.7 444.6 462.6</td>
+                  <td>384.7 385.6 386.1 386.2 386.4 387.1 391.0 392.1 392.9
+                    393.2 393.4 398.7 576.5 646.7</td>
+                  <td>183.2 185.3 186.5 188.9 195.2 197.0 209.7</td>
+                  <td>199.8 199.9 200.4 202.1 202.9 203.2 203.4</td>
+                  <td>104.4 104.5 108.7 108.7 108.8 109.1 109.2 109.2 109.4
+                    110.0 110.3 110.5 120.1 120.6</td>
+                  <td>110.8 111.6 111.9 112.0 112.7 113.1 114.8 115.1 115.6
+                    115.7 115.7 115.7 117.2 118.4</td>
+                  <td>69.1 69.6 70.0 70.4 70.4 70.8 77.2</td>
+                  <td>73.8 74.1 74.5 74.6 75.6 77.5 110.7</td>
+                  <td>65.4 65.5 66.9 68.0 69.3 72.8 86.8</td>
+                  <td>69.6 74.0 74.8 75.4 76.6 78.7 88.6</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+        </section>
+
+        <section>
+          <h3>Minor stuff</h3>
+          <ul>
+            <li>Land masking</li>
+            <li>Potential energy</li>
+            <li>Minor bug fixes</li>
+          </ul>
+        </section>
+
+        <!-- ACCESS-CM -->
+
+        <section>
+          <h3>ACCESS-CM Climate Model</h3>
+          <p>TODO</p>
+          <ul>
+            <li>CICE IO hangs</li>
+            <li>MOM OASIS restart hang</li>
+            <li>CICE load imbalance (unresolved)</li>
+            <li>Still no OASIS-specific profiling...</li>
+          </ul>
+        </section>
+
+        <!-- WaveWatch3 -->
+
+        <section>
+          <h3>WaveWatch 3</h3>
+          <p>TODO</p>
+          <ul>
+            <li>Subroutine scaling</li>
+
+        </section>
+
+        <!-- Future work -->
+
+        <section>
+          <h3>Future Work (TODO)</h3>
+          <ul>
+            <li>``mpp_global_field``</li>
+            <li>``ncar_rescale``</li>
+            <li>``psi_compute``</li>
+            <li>Per-timestep diagnostic collectives</li>
+            <li>concurrent area-weighted hang</li>
+            <li>More...?</li>
+          </ul>
+        </section>
+
+        <!-- configuration -->
+
+        <script src="lib/js/head.min.js"></script>
+        <script src="js/reveal.js"></script>
+
+        <script>
+          Reveal.initialize({
+            dependencies: [
+              { src: 'plugin/highlight/highlight.js',
+                async: true,
+                condition: function() {
+                  return !!document.querySelector( 'pre code' ); },
+                callback: function() {
+                  hljs.initHighlightingOnLoad(); }
+              },
+
+              { src: 'plugin/math/math.js', async: true }
+            ]
+          });
+        </script>
+      </div>
+    </div>
+</html>
