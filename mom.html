@@ -148,13 +148,33 @@
 
         <section>
           <h3>$z^*$ vertical grid</h3>
-          <img src="figures/zstar.svg" alt="z* coordinate">
-          <p>Improved free surface dynamics</p>
+          <p>Ocean surface-following coordinates</p>
+          $$z^* = H \left( \frac{z - \eta}{H + \eta} \right)$$
+          <ul>
+            <li>No initial spontaneous flow</li>
+            <li>Simpler neutral physics parameterisations</li>
+            <li>Always non-vanishing (except $\eta > -H$)</li>
+            <li>Static $\Delta z^*$, no spurious transport</li>
+            <li>Simpler $\nabla p$ calculations (relative to
+              terrain-following)</li>
+          </ul>
         </section>
 
         <section>
           <h3>Barotropic/baroclinic split timesteps</h3>
-          <p>TODO: Explain this (and move?)</p>
+          <p>Ocean stratification yields <i>fast</i> and <i>slow</i> dynamics:
+          $$
+          \mathbf{u} =
+          \left\{ \frac{1}{H} \int_{-H}^\eta \mathbf{u} \right\}
+            + \left\{ \mathbf{u}
+            - \frac{1}{H} \int_{-H}^\eta \mathbf{u} \right\}
+          $$
+          <ul>
+            <li>Depth-averaged dynamics is ~100x faster</li>
+            <li>Accuracy less important; simpler solvers</li>
+            <li>Additional filtering required</li>
+            <li>No tracer timesteps required</li>
+          </ul>
         </section>
 
         <!-- Build -->
