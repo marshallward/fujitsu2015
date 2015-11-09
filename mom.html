@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <title>MOM Overview</title>
+
+    <meta name="description" content="An overview of the Modular Ocean Model">
+    <meta name="author" content="Marshall Ward">
+
+    <link rel="stylesheet" href="css/reveal.css">
+    <link rel="stylesheet" href="css/theme/black.css" id="theme">
+    <!--<link rel="stylesheet" href="lib/css/solarized_dark.css"> -->
+
+    <!-- Code syntax highlighting -->
+    <link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+  <body>
+    <div class="reveal"
+         style="background: url(figures/nci/bg_nci.png);
+                background-size: cover;">
+
+      <header style="width: 10%; position: absolute; top: 2%; left: 2%;">
+        <img src="figures/nci/nci_logo_small.png" alt="NCI">
+      </header>
+
+      <!--
+      <footer style="position: absolute; bottom: 2%; right: 2%;">
+          <code>nci.org.au</code>
+      </footer>
+      -->
+
+      <div class="slides">
+
+        <section>
+          <div class="reveal" style="text-align: right;">
+            <img src="figures/nci/nci_logo.png"
+                 style="background:none; border:none; box-shadow:none;
+                        width: 30%;"
+                 alt="NCI">
+          </div>
+
+          <h3 style="text-align: left; color: white;">
+            An Overview of MOM
+          </h3>
+
+          <p style="text-align: right;">Marshall Ward
+            <br>National Computational Infrastructure
+          </p>
+        </section>
+
+        <section>
+          <h3>MOM summary</h3>
+          <p>Geophysical Fluid Dynamics Laboratory (GFDL)</p>
+          <ul>
+            <li>Bryan-Cox model</li>
+              <ul>
+                <li>Hydrostatic Boussinesq dynamics</li>
+                <li>Horizontal finite difference solver</li>
+                <li>Vertical convective adjustment</li>
+                <li>Arakawa B-grid for nonlinear conservation</li>
+                <li>Viscous parameterisation of turbulence</li>
+              </ul>
+            </li>
+          </ul>
+          <p>Almost every global ocean model can be traced to GFDL</p>
+        </section>
+
+        <section>
+          <h3>History of MOM</h3>
+          <dl>
+            <dt>1984: "Cox code"</dt>
+              <dd>First public release</dd>
+            <dt>1991: MOM 1</dd>
+              <dd>Fortran 77, POP fork</dd>
+            <dt>1996: MOM 2</dt>
+              <dd>"Memory window" parallelisation</dd>
+            <dt>1999: MOM 3</dt>
+            <dd>Explicit free surface (no elliptic solver)</dd>
+            <dt>2004: MOM 4</dt>
+              <dd>Domain decomposition (HIM), generalised grids</dd>
+            <dt>2012: MOM 5</dt>
+              <dd>Public, open source release</dd>
+          </dl>
+        </section>
+
+        <section>
+          <h3>Basic equations of motion</h3>
+          <p>Mostly a hyperbolic PDE with constraints</p>
+          $$
+          \begin{align}
+            p_z &= -g \rho \\
+            \mathbf{u}_t + \mathbf{u} \cdot \nabla \mathbf{u} + w \mathbf{u}_z
+              + f \hat{z} \times \mathbf{u}
+              &= -\tfrac{1}{\rho} \nabla p + \mathcal{F} \\
+						\phi_t + \mathbf{u} \cdot \nabla \phi + w \phi_z
+							&= \mathcal{F}_\phi \ (\phi \in T, S, \ldots) \\
+            \nabla \cdot \mathbf{u} + w_z &= 0 \\
+						f(\rho, T, S, ...) &= 0
+          \end{align}
+          $$
+          <p>But there are a lot of additional terms and forcings</p>
+        </section>
+
+        <section>
+          <h3>Barotropic/baroclinic split timesteps</h3>
+          <p>TODO: Explain this (and move?)</p>
+        </section>
+
+        <section>
+          <h3>FMS: Flexible Modeling System</h3>
+          <p>Framework for MOM and SIS development</p>
+          <ul>
+            <li>Abstraction of common operations
+              <ul>
+                <li>Communication (MPI, SHMEM, serial)</li>
+                <li>Diagnostics</li>
+                <li>IO (NetCDF)</li>
+                <li>Coupler field exchange</li>
+                <li>Time and calendar management</li>
+              </ul>
+            </li>
+          </ul>
+        </section>
+
+        <!-- Build -->
+
+        <section>
+          <h3>Building MOM</h3>
+        </section>
+
+        <section>
+          <h3>MOM source code</h3>
+          <p>MOM is publicly available and hosted on github:</p>
+          <pre><code data-trim class="sh">
+git clone https://github.com/BreakawayLabs/mom.git
+          </code></pre>
+          <ul>
+            <li>Scientific maintainer: Stephen Griffies (GFDL)</li>
+            <li>Repository maintainer: Nicholas Hannah (UNSW)</li>
+          </ul>
+        </section>
+
+				<section>
+					<h3>MOM drivers</h3>
+					<dl>
+						<dt>MOM_solo</dt>
+						<dd>Ocean-only
+							<br>(<code>src/mom5/drivers/ocean_solo.F90</code>)</dd>
+						<dt>MOM_SIS</dt>
+						<dd>Ocean-Sea Ice
+							<br>(<code>src/coupler/coupler_main.F90</code>)</dd>
+						<dt>CM2M</dt>
+						<dd>GFDL CM2 coupled model</dd>
+						<dt>ACCESS-CM</dt>
+						<dd>ACCESS coupled climate model</dd>
+					</dl>
+				</section>
+
+				<section>
+					<h3>Build configuration</h3>
+					<p>Makefiles are generated by GFDL's <code>mkmf</code> tool.
+					<dl>
+						<dt><code>environs.&lt;platform&gt;</code></dt>
+						<dd>Software stack (e.g. modules)</dd>
+						<dt><code>mkmf.template.&lt;platform&gt;</code></dt>
+						<dd>Compiler settings and flags</dd>
+					</dl>
+          <p>We use the <code>nci</code> platform</p>
+				</section>
+
+				<section>
+					<h3>Compilation</h3>
+					<p>Use the <code>MOM_compile.csh</code> script:
+					<pre><code data-trim>
+cd exp
+./MOM_compile --type MOM_SIS --platform nci
+					</code></pre>
+					Executable is located here:
+					<pre><code class="sh" data-trim>
+${CODEBASE}/exec/${platform}/${type}/fms_${type}.x
+					</code></pre>
+				</section>
+
+        <!-- Usage -->
+
+        <section>
+          <h2>Using MOM</h2>
+        </section>
+
+        <section>
+          <h3>Experiment layout</h3>
+          <dl>
+            <dt><code>./</code> (top-level directory)</dt>
+            <dd>Configuration files (namelists, etc.)</dd>
+            <dt><code>./INPUT/</code></dt>
+            <dd>Grid data, forcings, input restarts</dd>
+            <dt><code>./RESTART/</code></dt>
+            <dd>Output restart files (initially empty)</dd>
+          </dl>
+        </section>
+
+        <section>
+          <h3>Configuration files</h3>
+          <p>Four basic configuration files:<p>
+          <dl>
+            <dt><code>input.nml</code></dt>
+              <dd>Main configuration namelist</dd>
+            <dt><code>diag_table</code></dt>
+              <dd>Diagnostic fields and output rates</dd>
+            <dt><code>data_table</code></dt>
+              <dd>External data sets (boundary conditions)</dd>
+            <dt><code>field_table</code></dt>
+              <dd>Supplemental configuration</dd>
+          </dl>
+        </section>
+
+        <section>
+          <h3>Grid setup</h3>
+          <p>We use the new <b>mosaic</b> system</p>
+
+          <ul>
+            <li><b><code>grid_spec.nc</code></b>: Top-level mosaic file</li>
+            <li><b><code>ocean_mosaic.nc</code></b>: submodel mosaic file</li>
+            <li><b><code>ocean_hgrid.nc</code></b>: Horizontal grid</li>
+            <li><b><code>ocean_vgrid.nc</code></b>: Vertical grid (MOM-only)</li>
+            <li><b><code>ocean_topog.nc</code></b>: Ocean bathymetry</li>
+            <li><b><code>land_mask.nc</code></b>, <b><code>ocean_mask.nc</code></b></li>
+            <li><b><code>atm_ocean_mosaic_tile1Xocn_ocean_mosaic_tile1.nc</code></b></li>
+          </ul>
+        </section>
+
+        <section>
+          <h3><code>input.nml</code> overview</h3>
+          <p>TODO (this is long)</p>
+        </section>
+
+        <!-- Communication -->
+
+        <section>
+          <h2>MOM communication</h2>
+        </section>
+
+        <section>
+          <h3>Point-to-point</h3>
+          <dl>
+            <dt><code>mpp_send</code></dt>
+            <dd>Queues and calls <code>MPI_Isend</code></dd>
+            <dt><code>mpp_recv</code></dt>
+            <dd>Queues and calls <code>MPI_Recv</code></dd>
+            <dt><code>mpp_sync_self</code></dt>
+            <dd>Calls <code>MPI_Wait</code> for queued requests</dd>
+          </dl>
+          <p>Buffering is configured, and messages can be combined</p>
+          <p>(See <code>src/shared/mpp/mpp_transmit.inc</code>)</p>
+        </section>
+
+        <section>
+          <h3>Point-to-point example</h3>
+          <pre><code data-trim class="fortran">
+if (myid_y &lt; size_y) then
+   do ii = myid_y + 1, size_y
+      call mpp_send(psiu2(isc:iec), lenx, pelist_y(ii))
+   end do
+end if
+call mpp_sync_self()
+
+if(myid_y &gt; 1) then
+  do ii = 1, myid_y - 1
+    call mpp_recv(psiu2(isc:iec), lenx, pelist_y(ii))
+    do i=isc, iec; do j=jsc, jec
+      psiu(i,j) = psiu(i,j) + psiu2(i)
+    end do; end do
+  end do
+end if
+					</code></pre>
+        </section>
+
+        <section>
+          <h3>Collectives</h3>
+          <dl>
+            <dt>mpp_sum</dt>
+            <dd>Sum over ranks</dd>
+            <dt>mpp_max</dt>
+            <dd>Maximum value over ranks</dd>
+            <dt>mpp_min</dt>
+            <dd>Minimum value over ranks</dd>
+          </dl>
+          <p>Wrappers to <code>MPI_Allreduce</code></p>
+        </section>
+
+        <section>
+          <h3>Collective example</h3>
+          <pre><code data-trim class="fortran">
+! Calculate total potential energy
+pe_tot = 0.
+do k= 1, nk
+  do j = jsc, jec
+    do i = isc, iec
+      pe_tot = pe_tot + Grd%dat(i, j) * Thickness%dzt(i, j, k) &
+             	* Dens%rho(i, j, k, taup1) * Grd%tmask(i, j, k) &
+              * Thickness%depth_zt(i, j, k) * grav
+    end do
+  end do
+end do
+call mpp_sum(pe_tot)
+					</code></pre>
+        </section>
+
+        <section>
+          <h3>Other comms</h3>
+          <dl>
+            <dt><code>mpp_global_field</code></dt>
+            <dd>Gather global scalar or vector field onto rank</dd>
+            <dt><code>mpp_chksum</code></dt>
+            <dd>Call <code>mpp_sum</code> as 8-byte integer recast</dd>
+          </dl>
+        </section>
+
+        <section>
+          <h3>Generic interfaces</h3>
+          <p>Interfaces have been provided for all scenarios</p>
+          <ul>
+            <li>Scalars and vectors (2d, 3d, 4d, 5d)</li>
+            <li>Integers, reals, and complex types</li>
+            <li>4 and 8 bytes</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3>Internal stacks</h3>
+          <p>Most <code>mpp</code> operations use an internal stack.<p>
+          <dl>
+            <dt>mpp_domains_set_stack_size</dt>
+            <dd>Manually set the stack size</dd>
+          </dl>
+          <p>MOM automatically sets this, but SIS does not</p>
+        </section>
+
+        <!-- Grid domains -->
+
+        <section>
+          <h3>MOM grids</h3>
+        </section>
+
+				<section>
+					<h3>Arakawa grids</h3>
+          <img src="figures/arakawa.svg" alt="Arakawa grids"
+               style="background: white; border: none; box-shadow: none;">
+					<p>MOM uses B-grids (and some C-grids)</p>
+				</section>
+
+        <section>
+          <h3>Generalised orthogonal coordinates</h3>
+          <img src="figures/gfdl_tripole.svg" alt="Orthographic tripolar"
+               style="background: none; border: none; box-shadow: none;">
+          <p>Generalised grids require $\Delta x$ arrays</p>
+        </section>
+
+				<section>
+					<h3>$z^*$ vertical grid</h3>
+					<img src="figures/zstar.svg" alt="z* coordinate">
+					<p>Improved free surface dynamics</p>
+				</section>
+
+        <section>
+          <h3>Grid domain decomposition</h3>
+          <img src="figures/tiling.svg" alt="MOM tiling illustration">
+        </section>
+
+        <section>
+          <h3>Layout configuration</h3>
+          <p>TODO: go over input.nml</p>
+        </section>
+
+        <section>
+          <h3>Halo update</h3>
+          <img src="figures/halo.svg" alt="Halo update"
+               style="background: none; border: none; box-shadow: none;">
+        </section>
+
+        <section>
+          <h3>Grid indexing</h3>
+          <dl>
+            <dt>Global domain</dt>
+            <dd><code>isg, ieg, jsg, jeg</code></dd>
+            <dt>Compute domain</dt>
+            <dd><code>isc, iec, jsc, jec</code></dd>
+            <dt>Data domain</dt>
+            <dd><code>isd, ied, jsd, jed</code></dd>
+            <dt>Memory domain</dt>
+            <dd><code>ism, iem, jsm, jem</code></dd>
+          </ul>
+        </section>
+
+        <section>
+          <h3>Grid API</h3>
+          <dl>
+            <dt><code>mpp_define_domains</code></dt>
+            <dd>Set up the domain decomposition</dd>
+            <dt><code>mpp_get_data_domain</code></dt>
+            <dd>Get data domain indices</dd>
+            <dt><code>mpp_get_compute_domain</code></dt>
+            <dd>Get compute domain indices</dd>
+            <dt><code>mpp_update_domains</code></dt>
+            <dd>Stage a halo update</dd>
+          </dl>
+        </section>
+
+        <section>
+          <h3>Domain API example</h3>
+          <pre><code data-trim class="fortran">
+call mpp_define_domains([1, 100], 2, domain, pelist, halo=2)
+
+call mpp_get_global_domain(domain, isg, ieg) ! isg, ieg = -1, 102
+call mpp_get_data_domain(domain, isd, ied) ! isd, ied = -1, 52
+call mpp_get_compute_domain(domain, isc, iec) ! isc, iec = 1, 50
+allocate(a(isd:ied))
+do i = is,ie
+ a(i) = &lt;perform computations&gt;
+end do
+call mpp_update_domains(a, domain)
+          </code></pre>
+        </section>
+
+        <!-- Tracer update -->
+
+        <section>
+          <h2>Tracer advection</h2>
+        </section>
+
+        <section>
+          <h3>Tracer scaling</h3>
+          <img src="figures/subrt/update_ocean_tracer.svg"
+               alt="Tracer update scaling"
+               style="background: none; border: none; box-shadow: none;">
+        </section>
+
+        <section>
+          <section>
+            <h3>Tracer fields</h3>
+            <p>Temperature, salinity, subduction time ("age"), ...</p>
+
+            <ul>
+              <li><code>update_ocean_tracer</code>
+                <ul>
+                  <li><code>horz_advect_tracer</code>
+                    <ul>
+                      <li><code>advect_tracer_mdppm</code>
+                        <ul>
+                          <li><code>ppm_limit_sh</code></li>
+                        </ul>
+                      </li>
+                    </ul>
+                  </li>
+                  <li><code>vert_diffuse_implicit</code></li>
+                  <li><code>send_tracer_diagnostics</code></li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h3>Tracer scaling</h3>
+            <img src="figures/subrt/horz_advect_tracer.svg"
+                 alt="Horizontal tracer advection scaling"
+                 style="background: none; border: none; box-shadow: none;">
+          </section>
+
+          <section>
+            <h3>Tracer scaling</h3>
+            <img src="figures/subrt/advect_tracer_mdppm.svg"
+                 alt="MDPPM tracer advection scaling"
+                 style="background: none; border: none; box-shadow: none;">
+          </section>
+
+          <section>
+            <h3>Tracer scaling</h3>
+            <img src="figures/subrt/ppm_limit_sh.svg"
+                 alt="PPM limit scaling"
+                 style="background: none; border: none; box-shadow: none;">
+          </section>
+
+          <section>
+            <h3>Tracer scaling</h3>
+            <img src="figures/subrt/vert_diffuse_implicit.svg"
+                 alt="Implicit vertical diffusion scaling"
+                 style="background: none; border: none; box-shadow: none;">
+          </section>
+
+          <section>
+            <h3>Tracer scaling</h3>
+            <img src="figures/subrt/send_tracer_diagnostics.svg"
+                 alt="Tracer diagnostic scaling"
+                 style="background: none; border: none; box-shadow: none;">
+          </section>
+        </section>
+
+        <!-- Velocity update -->
+
+        <section>
+          <h2>Pre-barotropic acceleration</h2>
+        </section>
+
+        <section>
+          <h3>Acceleration scaling</h3>
+          <img src="figures/subrt/ocean_explicit_accel_a.svg"
+               alt="Acceleration scaling"
+               style="background: none; border: none; box-shadow: none;">
+        </section>
+
+        <section>
+          <section>
+            <h3>Acceleration call tree</h3>
+            <ul>
+              <li><code>ocean_explicit_accel_a</code></li>
+                <ul>
+                  <li><code>bih_friction</code></li>
+                  <li><code>pressure_force</code></li>
+                  <li><code>horz_advection_of_velocity</code></li>
+                  <li><code>vert_advection_of_velocity</code></li>
+                  <li><code>momentum_source</code></li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h3>Biharmonic friction</h3>
+            <img src="figures/subrt/bih_friction.svg"
+                 alt="Biharmonic friction scaling"
+                 style="background: none; border: none; box-shadow: none;">
+          </section>
+
+          <section>
+            <h3>Pressure</h3>
+            <img src="figures/subrt/pressure_force.svg"
+                 alt="Pressure force scaling"
+                 style="background: none; border: none; box-shadow: none;">
+          </section>
+
+          <section>
+            <h3>Horizontal momentum advection</h3>
+            <img src="figures/subrt/horz_advection_of_velocity.svg"
+                 alt="Horizontal advection of velocity scaling"
+                 style="background: none; border: none; box-shadow: none;">
+          </section>
+
+          <section>
+            <h3>Vertical momentum advection</h3>
+            <img src="figures/subrt/vert_advection_of_velocity.svg"
+                 alt="Vertical advection of velocity scaling"
+                 style="background: none; border: none; box-shadow: none;">
+          </section>
+
+          <section>
+            <h3>Momentum sources</h3>
+            <img src="figures/subrt/momentum_source.svg"
+                 alt="Momentum source scaling"
+                 style="background: none; border: none; box-shadow: none;">
+          </section>
+        </section>
+
+        <!-- Vertical mixing -->
+
+        <section>
+          <h2>Vertical mixing</h2>
+        </section>
+
+        <section>
+          <h3>Vertical mixing coefficient</h3>
+          <img src="figures/subrt/vert_mix_coeff.svg"
+               alt="Vertical mixing scaling"
+               style="background: none; border: none; box-shadow: none;">
+        </section>
+
+        <section>
+          <section>
+            <h3>Vertical mixing call tree</h3>
+            <ul>
+              <li>vert_mix_coeff</li>
+                <ul>
+                  <li>vert_mix_kpp_mom4p1</li>
+                  <li>vert_mix_tidal</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h3>KPP vertical mixing</h3>
+            <img src="figures/subrt/vert_mix_kpp_mom4p1.svg"
+                 alt="KPP scaling"
+                 style="background: none; border: none; box-shadow: none;">
+          </section>
+
+          <section>
+            <h3>Tidal mixing</h3>
+            <img src="figures/subrt/vert_mix_tidal.svg"
+                 alt="Tidal mixing scaling"
+                 style="background: none; border: none; box-shadow: none;">
+          </section>
+        </section>
+
+        <!-- Submesoscale restratification -->
+
+        <section>
+          <h2>Submesoscale</h2>
+        </section>
+
+        <section>
+          <h3>Submesoscale restratification</h3>
+          <img src="figures/subrt/submeso_restrat.svg"
+               alt="Submeso scaling"
+               style="background: none; border: none; box-shadow: none;">
+        </section>
+
+        <section>
+          <section>
+            <h3>Submesoscale call tree</h3>
+            <ul>
+              <li>submeso_restrat</li>
+                <ul>
+                  <li>compute_submeso_skewsion</li>
+                  <li>compute_psi</li>
+                  <li>compute_bldepth</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h3>Submesoscale "skewsion"</h3>
+            <img src="figures/subrt/compute_submeso_skewsion.svg"
+                 alt="Skewsion scaling"
+                 style="background: none; border: none; box-shadow: none;">
+          </section>
+
+          <section>
+            <h3>Barotropic streamfunction?</h3>
+            <img src="figures/subrt/compute_psi.svg"
+                 alt="Barotropic streamfunction scaling"
+                 style="background: none; border: none; box-shadow: none;">
+          </section>
+
+          <section>
+            <h3>"bldepth"</h3>
+            <img src="figures/subrt/compute_bldepth.svg"
+                 alt='"bldepth"?'
+                 style="background: none; border: none; box-shadow: none;">
+          </section>
+        </section>
+
+        <!-- Barotropic update -->
+
+        <section>
+          <h2>Barotropic timestep</h2>
+        </section>
+
+        <section>
+          <h3>Barotropic update scaling</h3>
+          <img src="figures/subrt/update_ocean_barotropic.svg"
+               alt="Acceleration scaling"
+               style="background: none; border: none; box-shadow: none;">
+        </section>
+
+        <section>
+          <section>
+            <h3>Barotropic call tree</h3>
+            <ul>
+              <li>update_ocean_barotropic</li>
+                <ul>
+                  <li>pred_corr_tropic_depth_bgrid</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h3>Tropic depth predictor/corrector</h3>
+            <img src="figures/subrt/pred_corr_tropic_depth_bgrid.svg"
+                 alt="Tropic depth predictor/corrector scaling"
+                 style="background: none; border: none; box-shadow: none;">
+          </section>
+        </section>
+
+        <section>
+          <h3>Barotropic solver</h3>
+          <ul>
+            <li>Predictor-corrector (Euler) timesteps</li>
+            <li>80 barotropic steps per ocean (baroclinic) step</li>
+            <li>Halos updated every 10 BT timesteps</li>
+            <li>42 halo updates per ocean step</li>
+          </ul>
+          <p>Basic equation:
+$$\begin{align}
+\rho_o \left(\partial_t + f \hat{z} \times \right) \mathbf{U} &= \mathbf{G}
+    - \left( H + \eta \right) \nabla \left( \rho_a + \rho_0 g \eta \right) \\
+\eta_t &= - \nabla \cdot \mathbf{U}
+\end{align}$$
+          </p>
+        </section>
+
+        <section>
+          <h2>All the rest</h2>
+        </section>
+
+        <section>
+          <h3>Density update</h3>
+          <img src="figures/subrt/update_ocean_density.svg"
+               alt="Density update scaling"
+               style="background: none; border: none; box-shadow: none;">
+        </section>
+
+        <section>
+          <h3>Implicit acceleration</h3>
+          <img src="figures/subrt/ocean_implicit_accel.svg"
+               alt="Implict acceleration scaling"
+               style="background: none; border: none; box-shadow: none;">
+        </section>
+
+        <section>
+          <h3>U-cell thickness update</h3>
+          <img src="figures/subrt/update_ucell_thickness.svg"
+               alt=""
+               style="background: none; border: none; box-shadow: none;">
+        </section>
+
+        <section>
+          <h3>Ocean surface smoothing</h3>
+          <img src="figures/subrt/ocean_eta_smooth.svg"
+               alt=""
+               style="background: none; border: none; box-shadow: none;">
+        </section>
+
+        <section>
+          <h3>Ocean surface smoothing</h3>
+          <ul>
+            <li>Required to remove B-grid null mode</li>
+            <li>Using biharmonic, Laplacian is recommended</li>
+            <li>C-grid doesn't need this</li>
+          </ul>
+          <p>Basic filtering:
+          $$\eta_{n+1} = -\nabla^4 \eta_n$$
+          </p>
+        </section>
+
+        <section>
+          <h3>Shortwave radiation source</h3>
+          <img src="figures/subrt/sw_source.svg"
+               alt=""
+               style="background: none; border: none; box-shadow: none;">
+        </section>
+
+        <section>
+          <h3>Velocity update</h3>
+          <img src="figures/subrt/update_ocean_velocity_bgrid.svg"
+               alt=""
+               style="background: none; border: none; box-shadow: none;">
+        </section>
+
+        <section>
+          <h3>Velocity advection</h3>
+          <img src="figures/subrt/ocean_advection_velocity.svg"
+               alt=""
+               style="background: none; border: none; box-shadow: none;">
+        </section>
+
+        <section>
+          <h3>T-cell thickness update</h3>
+          <img src="figures/subrt/update_tcell_thickness.svg"
+               alt=""
+               style="background: none; border: none; box-shadow: none;">
+        </section>
+
+        <section>
+          <h3>Density diagnostics</h3>
+          <img src="figures/subrt/ocean_density_diag.svg"
+               alt=""
+               style="background: none; border: none; box-shadow: none;">
+        </section>
+
+        <section>
+          <h3>Surface boundary conditions</h3>
+          <img src="figures/subrt/get_ocean_sbc.svg"
+               alt=""
+               style="background: none; border: none; box-shadow: none;">
+        </section>
+
+        <section>
+          <h3>General diagnostics</h3>
+          <img src="figures/subrt/ocean_diagnostics.svg"
+               alt=""
+               style="background: none; border: none; box-shadow: none;">
+        </section>
+
+        <!-- Miscellaneous -->
+
+        <section>
+          <h2>Miscellaneous</h2>
+        </section>
+
+				<section>
+					<h3>Diagnostics</h3>
+					<ul>
+						<li>register_diag</li>
+						<li>...</li>
+					</ul>
+				</section>
+
+        <section>
+          <h3>Internal profiler</h3>
+          <p>TODO: mpp_clock stuff</p>
+        </section>
+
+        <section>
+          <h3>Bit reproducibility</h3>
+          <ul>
+            <li>Point-to-point is reproducible</li>
+            <li>Collectives are not on default</li>
+            <li>Model configuration
+              <p>TODO</p>
+            </li>
+            <li>Compilation:
+              <ul>
+                <li><code>--align all</code></li>
+              </ul>
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h3>Checksums</h3>
+        </section>
+
+        <!-- configuration -->
+
+        <script src="lib/js/head.min.js"></script>
+        <script src="js/reveal.js"></script>
+
+        <script>
+          Reveal.initialize({
+            dependencies: [
+              { src: 'plugin/highlight/highlight.js',
+                async: true,
+                condition: function() {
+                  return !!document.querySelector( 'pre code' ); },
+                callback: function() {
+                  hljs.initHighlightingOnLoad(); }
+              },
+
+              { src: 'plugin/math/math.js', async: true }
+            ]
+          });
+        </script>
+      </div>
+    </div>
+</html>

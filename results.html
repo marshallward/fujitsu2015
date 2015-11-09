@@ -12,6 +12,18 @@
     <link rel="stylesheet" href="css/reveal.css">
     <link rel="stylesheet" href="css/theme/black.css" id="theme">
     <!--<link rel="stylesheet" href="lib/css/solarized_dark.css"> -->
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+    <!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
   </head>
   <body>
     <div class="reveal"
@@ -51,8 +63,13 @@
 
         <section>
           <h3>0.25° Global MOM-SIS Model</h3>
-          <ul>
-            <li>Orthogonal curvilinear grids (e.g. tripolar)
+          <img src="figures/gfdl_tripole.svg"
+               style="background:none; border:none; box-shadow:none;
+                      float: right; width: 35%"
+               alt="Tripolar grid">
+          <ul style="width: 60%;">
+            <li>Finite difference PDE (mostly)</li>
+            <li>Orthogonal curvilinear grids</li>
             <li>1440 x 1080 x 50 grid points</li>
             <li>480 ocean steps (10 days)</li>
             <li>Per ocean step:
@@ -61,8 +78,8 @@
                 <li>1 advective sea ice step</li>
               </ul>
             </li>
+            <li>Halo exchange parallelisation</li>
           </ul>
-          <p>TODO</p>
         </section>
 
         <section>
@@ -79,7 +96,17 @@
 
         <section>
           <h3>0.1° Modelling</h3>
-          <p>TODO</p>
+          <video controls>
+            <source src="movies/socn.webm">
+          </video>
+          <p>3600 x 2700 x 50 grid points</p>
+        </section>
+
+        <section>
+          <h3>0.1° Scaling</h3>
+          <img src="figures/scaling01_loop.svg"
+               style="background: none; border: none; box-shadow: none;">
+          <p>(More results incoming...)</p>
         </section>
 
         <section>
@@ -148,7 +175,7 @@
         <!-- MOM-SIS concurrency -->
 
         <section>
-          <h3>Submodel scaling</h3>
+          <h3>Submodel scaling (0.25°)</h3>
           <img src="figures/submodels.svg"
                style="background: none; border: none; box-shadow: none;">
         </section>
@@ -157,12 +184,13 @@
           <h3>MOM-SIS Concurrency</h3>
           <img src="figures/sis_concurrency.svg"
                style="background: none; border: none; box-shadow: none;">
-          <p>TODO: Combine figures</p>
         </section>
 
         <section>
           <h3>Concurrency scaling</h3>
-          <p>TODO</p>
+          <img src="figures/ccscaling_loop.svg"
+               style="background: none; border: none; box-shadow: none;">
+          <p>(More results incoming...)</p>
         </section>
 
         <section>
@@ -222,9 +250,20 @@
         <!-- Intel and Open MPI comparison -->
 
         <section>
+          <h3>Intel MPI vs. Open MPI</h3>
+          <p>Software Stack</p>
+          <ul>
+            <li>Intel Compiler Collection: 15.0.3.187</li>
+            <li>Open MPI 1.8.8</li>
+            <li>Intel MPI 5.1.0.079</li>
+          </ul>
+        </section>
+
+        <section>
           <section>
             <h3>Intel MPI vs. Open MPI</h3>
-            <img src="figures/intel_ompi_loop.svg">
+            <img src="figures/intel_ompi_loop.svg"
+                 style="background: none; border: none; box-shadow: none;">
           </section>
 
           <section>
@@ -303,12 +342,81 @@
 
         <section>
           <h3>ACCESS-CM Climate Model</h3>
-          <p>TODO</p>
           <ul>
-            <li>CICE IO hangs</li>
-            <li>MOM OASIS restart hang</li>
-            <li>CICE load imbalance (unresolved)</li>
-            <li>Still no OASIS-specific profiling...</li>
+            <li>Coupled climate model, three components:
+              <ul>
+                <li>Atmosphere: UM (v8.5 -> 10.2)</li>
+                <li>Ocean: MOM v5.1</li>
+                <li>Sea Ice: CICE v5.1</li>
+              </ul>
+            </li>
+            <li>Grid resolutions
+              <ul>
+                <li><b>Atmosphere</b>: 193 x 144 (~1°)</li>
+                <li><b>Ocean</b>: 1440 x 1080 (~0.25°)</li>
+              </ul>
+            </li>
+            <li>OASIS-MCT coupler</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3>Anomalous hanging</h3>
+          <dl>
+            <dt>Problem</dt>
+            <dd>Runtimes would vary between 2 and 5 hours (or longer)</dd>
+            <dt>Resolution</dt>
+            <dd>Enable buffered IO (c/o Nicholas Hannah, UNSW)
+            <br><code>--assume buffered_io</code>
+          </dl>
+        </section>
+
+        <section>
+          <section>
+            <h3>Runtime variability</h3>
+            <img src="figures/a96_cice_comm.svg"
+                 style="background: none; border: none; box-shadow: none;">
+            <p>... but CICE runtime still showed variability</p>
+          </section>
+
+          <section>
+            <h3>Runtime variability</h3>
+          </section>
+        </section>
+
+        <section>
+          <h3>Concurrent IO</h3>
+          <ul>
+            <li>Out-of-bound heat flux warnings</li>
+            <li>ACCESS directed errors to single file</li>
+            <li>Many GB of warnings per year (?)</li>
+            <li>Still not clear if intentional (?)</li>
+          </ul>
+
+          <p>Resolved by using one logfile per rank</p>
+        </section>
+
+        <section>
+          <h3>MOM OASIS model hang</h3>
+          <ul>
+            <li>Every rank was constructing global coupler restart fields</li>
+            <li>$N^2$ messages overwhelm Raijin</li>
+            <li>Only Rank 0 was doing IO anyway!</li>
+          </ul>
+          <pre><code data-trim class="fortran">
+call mpp_global_field(Ocean_sfc%domain, &
+                      vtmp(iisc:iiec,jjsc:jjec), gtmp, &
+                      flags=ROOT_GLOBAL)
+					</code></pre>
+          <p>Now only rank 0 constructs coupler restart fields</p>
+        </section>
+
+        <section>
+          <h3>ACCESS-CM TODO</h3>
+          <ul>
+            <li>CICE EVP load imbalance</li>
+            <li>OASIS performance?</li>
+            <li>CICE CPU reduction</li>
           </ul>
         </section>
 
@@ -316,25 +424,121 @@
 
         <section>
           <h3>WaveWatch 3</h3>
-          <p>TODO</p>
+          <p>Surface wave model used at NOAA/NWS<p>
           <ul>
-            <li>Subroutine scaling</li>
+            <li>Wave propagation in slow varying dispersive medium</li>
+            <li>Combined spectral and spatial timesteps</li>
+            <li>1440 x 625 (0.25°) spatial grid</li>
+            <li>Open source, but needs registration</li>
+        </section>
 
+        <section>
+          <section>
+            <h3>WW3 main loop</h3>
+             <img src="figures/ww3/w3wave.svg"
+                 style="background: none; border: none; box-shadow: none;">
+          </section>
+
+          <section>
+            <h3>WW3 main loop: Spectral bin gathering</h3>
+            <img src="figures/ww3/w3gath.svg"
+                 style="background: none; border: none; box-shadow: none;">
+          </section>
+
+          <section>
+            <h3>WW3 main loop: Spectral partitioning</h3>
+            <img src="figures/ww3/w3cprt.svg"
+                 style="background: none; border: none; box-shadow: none;">
+          </section>
+
+          <section>
+            <h3>WW3 main loop: Spatial propagation</h3>
+            <img src="figures/ww3/w3xyp3.svg"
+                 style="background: none; border: none; box-shadow: none;">
+          </section>
+
+          <section>
+            <h3>WW3 main loop: Source terms</h3>
+            <img src="figures/ww3/w3srce.svg"
+                 style="background: none; border: none; box-shadow: none;">
+          </section>
+
+          <section>
+            <h3>WW3 main loop: Spectral propagation</h3>
+            <img src="figures/ww3/w3ktp3.svg"
+                 style="background: none; border: none; box-shadow: none;">
+          </section>
+
+          <section>
+            <h3>WW3 main loop: Spectral bin scattering</h3>
+            <img src="figures/ww3/w3scat.svg"
+                 style="background: none; border: none; box-shadow: none;">
+          </section>
+
+          <section>
+            <h3>WW3 main loop: Mean parameter calculation</h3>
+            <img src="figures/ww3/w3outg.svg"
+                 style="background: none; border: none; box-shadow: none;">
+          </section>
+        </section>
+
+        <section>
+          <h3>WW3 initialization</h3>
+          <img src="figures/ww3/w3init.svg"
+               style="background: none; border: none; box-shadow: none;">
+        </section>
+
+        <section>
+          <h3>WW3 Restart IO</h3>
+          <img src="figures/ww3/w3iors.svg"
+               style="background: none; border: none; box-shadow: none;">
+          <p>Used in initialization and main loop</p>
+        </section>
+
+        <section>
+          <h3>WW3 MPI-IO Progress</h3>
+					<table border="1" class="docutils">
+						<colgroup>
+							<col width="50%" />
+							<col width="50%" />
+						</colgroup>
+						<thead valign="bottom">
+							<tr>
+								<th class="head">IO Type</th>
+								<th class="head">Time (s)</th>
+							</tr>
+						</thead>
+						<tbody valign="top">
+							<tr><td>Single-rank</td>
+								<td>2830.46</td>
+							</tr>
+							<tr><td>Concurrent POSIX</td>
+								<td>1745.73</td>
+							</tr>
+							<tr><td>Disabled</td>
+								<td>1395.13</td>
+							</tr>
+							<tr><td>MPI-IO</td>
+								<td>1395.16</td>
+							</tr>
+						</tbody>
+					</table>
         </section>
 
         <!-- Future work -->
 
-        <section>
+        <!-- <section>
           <h3>Future Work (TODO)</h3>
           <ul>
-            <li>``mpp_global_field``</li>
-            <li>``ncar_rescale``</li>
-            <li>``psi_compute``</li>
+            <li><code>mpp_global_field</code></li>
+            <li><code>ncar_rescale</code></li>
+            <li><code>psi_compute</code></li>
             <li>Per-timestep diagnostic collectives</li>
             <li>concurrent area-weighted hang</li>
             <li>More...?</li>
           </ul>
         </section>
+        -->
 
         <!-- configuration -->
 
