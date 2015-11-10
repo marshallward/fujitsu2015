@@ -336,6 +336,21 @@ ${CODEBASE}/exec/${platform}/${type}/fms_${type}.x
           </ul>
         </section>
 
+        <section>
+          <h3>Tracer advection</h3>
+          <p>Advection scheme for each tracer defined in
+          <code>field_table</code>:</p>
+          <pre><code data-trim class="fortran">
+"prog_tracers","ocean_mod","temp"
+horizontal-advection-scheme = mdppm
+vertical-advection-scheme = mdppm
+restart_file  = ocean_temp_salt.res.nc
+ppm_hlimiter = 3
+ppm_vlimiter = 3
+/
+          </code></pre>
+        </section>
+
         <!-- Model configuration -->
 
         <section>
@@ -380,17 +395,17 @@ lookup_es: saturation vapor pressure table overflow, nbad=      1
 						<li>... which are aliased to large scales (unstable)</li>
 					</ul>
 					<pre><code data-trim class="fortran">
-&ocean_lap_friction_nml
+&amp;ocean_lap_friction_nml
   ! lap_friction_scheme='const'
   lap_friction_scheme='general'
 /
 
-&ocean_lapcst_friction_nml
+&amp;ocean_lapcst_friction_nml
   use_this_module=.false.
   alap = 1e4
 /
 
-&ocean_lapgen_friction_nml
+&amp;ocean_lapgen_friction_nml
   use_this_module=.true.
   k_smag_iso=2.0
   vel_micom_iso=0.005
@@ -483,7 +498,7 @@ call mpp_sum(pe_tot)
 
         <section>
           <h3>Generic interfaces</h3>
-          <p>Interfaces have been provided for all scenarios</p>
+          <p>Interfaces have been provided for all cases</p>
            <pre><code data-trim class="fortran">
 interface mpp_sum
     module procedure mpp_sum_int8
@@ -505,13 +520,14 @@ end interface mpp_sum
         </section>
 
         <section>
-          <h3>Internal stacks</h3>
-          <p>Most <code>mpp</code> operations use an internal stack.<p>
-          <dl>
-            <dt>mpp_domains_set_stack_size</dt>
-            <dd>Manually set the stack size</dd>
-          </dl>
-          <p>MOM automatically sets this, but SIS does not</p>
+          <h3>Domain stacks</h3>
+          <p>Most <code>mpp</code> operations use an internal stack:<p>
+          <pre><code data-trim class="fortran">
+&amp;fms_nml
+  domains_stack_size = 115200
+/
+          </code></pre>
+          <p>MOM automatically sets this to tile size, but SIS does not</p>
         </section>
 
         <!-- Grid domains -->
@@ -666,10 +682,21 @@ call mpp_update_domains(a, domain)
           </section>
         </section>
 
+        <section>
+					<h3>MDPPM advection</h3>
+					<p>TODO</p>
+				</section>
+
+        <section>
+					<h3>Time-implicit vertical diffusion</h3>
+					<p>Uses a tridiagonal solver</p>
+					<p>TODO</p>
+				</section>
+
         <!-- Velocity update -->
 
         <section>
-          <h3>Pre-barotropic acceleration</h3>
+          <h3>Acceleration</h3>
           <img src="figures/subrt/ocean_explicit_accel_a.svg"
                alt="Acceleration scaling"
                style="background: none; border: none; box-shadow: none;">
@@ -726,6 +753,11 @@ call mpp_update_domains(a, domain)
                  style="background: none; border: none; box-shadow: none;">
           </section>
         </section>
+
+				<section>
+					<h3>Biharmonic operator</h3>
+					<p>TODO</p>
+				</section>
 
         <!-- Vertical mixing -->
 
@@ -813,8 +845,8 @@ call mpp_update_domains(a, domain)
           <h3>Submesoscale theory</h3>
           <ul>
             <li>Parameterises the restratification by mesoscale eddies</li>
-            <li>
           </ul>
+					<p>TODO</p>
         </section>
 
         <!-- Barotropic update -->
@@ -989,6 +1021,9 @@ $$\begin{align}
 
         <section>
           <h3>Checksums</h3>
+					<ul>
+						<li><code>debug_this_module = .true.</code></li>
+					</ul>
         </section>
 
         <!-- configuration -->
