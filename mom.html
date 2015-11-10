@@ -136,7 +136,8 @@
           <h3>Arakawa grids</h3>
           <img src="figures/arakawa.svg" alt="Arakawa grids"
                style="background: white; border: none; box-shadow: none;">
-          <p>MOM uses B-grids (and some C-grids)</p>
+          <p>MOM is a B-grid model</p>
+          <p>"Northeast convention": $U(i,j)$ is northeast of $T(i,j)$</p>
         </section>
 
         <section>
@@ -147,21 +148,7 @@
         </section>
 
         <section>
-          <h3>$z^*$ vertical grid</h3>
-          <p>Ocean surface-following coordinates</p>
-          $$z^* = H \left( \frac{z - \eta}{H + \eta} \right)$$
-          <ul>
-            <li>No initial spontaneous flow</li>
-            <li>Simpler neutral physics parameterisations</li>
-            <li>Always non-vanishing (except $\eta > -H$)</li>
-            <li>Static $\Delta z^*$, no spurious transport</li>
-            <li>Simpler $\nabla p$ calculations (relative to
-              terrain-following)</li>
-          </ul>
-        </section>
-
-        <section>
-          <h3>Barotropic/baroclinic split timesteps</h3>
+          <h3>Split timestepping</h3>
           <p>Ocean stratification yields <i>fast</i> and <i>slow</i> dynamics:
           $$
           \mathbf{u} =
@@ -171,9 +158,21 @@
           $$
           <ul>
             <li>Depth-averaged dynamics is ~100x faster</li>
-            <li>Accuracy less important; simpler solvers</li>
+            <li>Acchracy less important; simpler solvers</li>
             <li>Additional filtering required</li>
-            <li>No tracer timesteps required</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3>$z^*$ vertical grid</h3>
+          <p>Ocean surface-following coordinates</p>
+          <p>
+          $z^* = H \left( \frac{z - \eta}{H + \eta} \right)$
+          <img src="figures/zstar.gif" style="float: right">
+          <ul>
+            <li>No initial spontaneous flow</li>
+            <li>Simpler neutral physics parameterisations</li>
+            <li>Always non-vanishing (except $\eta > -H$)</li>
           </ul>
         </section>
 
@@ -184,7 +183,7 @@
         </section>
 
         <section>
-          <h3>MOM source code</h3>
+          <h3>MOM source</h3>
           <p>MOM is publicly available and hosted on github:</p>
           <pre><code data-trim class="sh">
 git clone https://github.com/BreakawayLabs/mom.git
@@ -193,6 +192,24 @@ git clone https://github.com/BreakawayLabs/mom.git
             <li>Scientific maintainer: Stephen Griffies (GFDL)</li>
             <li>Repository maintainer: Nicholas Hannah (UNSW)</li>
           </ul>
+        </section>
+
+        <section>
+          <h3>MOM codebase</h3>
+          <dl>
+            <dt><code>bin/</code></dt>
+            <dd>Platform configuration</dd>
+            <dt><code>data/</code></dt>
+            <dd>Dataset management</dd>
+            <dt><code>doc/</code></dt>
+            <dd>Documentation</dd>
+            <dt><code>exp/</code></dt>
+            <dd>Compile and run scripts</dd>
+            <dt><code>src/</code></dt>
+            <dd>Model sourcecode</dd>
+            <dt><code>test/</code></dt>
+            <dd>Test and verification suites<dd>
+          </dl>
         </section>
 
         <section>
@@ -239,17 +256,17 @@ ${CODEBASE}/exec/${platform}/${type}/fms_${type}.x
         <!-- Usage -->
 
         <section>
-          <h2>Using MOM</h2>
+          <h2>Running MOM</h2>
         </section>
 
         <section>
           <h3>Experiment layout</h3>
           <dl>
-            <dt><code>./</code> (top-level directory)</dt>
+            <dt><code>$expt/</code></dt>
             <dd>Configuration files (namelists, etc.)</dd>
-            <dt><code>./INPUT/</code></dt>
+            <dt><code>$expt/INPUT/</code></dt>
             <dd>Grid data, forcings, input restarts</dd>
-            <dt><code>./RESTART/</code></dt>
+            <dt><code>$expt/RESTART/</code></dt>
             <dd>Output restart files (initially empty)</dd>
           </dl>
         </section>
@@ -270,24 +287,117 @@ ${CODEBASE}/exec/${platform}/${type}/fms_${type}.x
         </section>
 
         <section>
-          <h3>Grid setup</h3>
-          <p>We use the new <b>mosaic</b> system</p>
+          <h3>Mosaic grid system</h3>
 
-          <ul>
-            <li><b><code>grid_spec.nc</code></b>: Top-level mosaic file</li>
-            <li><b><code>ocean_mosaic.nc</code></b>: submodel mosaic file</li>
-            <li><b><code>ocean_hgrid.nc</code></b>: Horizontal grid</li>
-            <li><b><code>ocean_vgrid.nc</code></b>: Vertical grid (MOM-only)</li>
-            <li><b><code>ocean_topog.nc</code></b>: Ocean bathymetry</li>
-            <li><b><code>land_mask.nc</code></b>, <b><code>ocean_mask.nc</code></b></li>
-            <li><b><code>atm_ocean_mosaic_tile1Xocn_ocean_mosaic_tile1.nc</code></b></li>
-          </ul>
+          <dl>
+            <dt><code>grid_spec.nc</code></dt>
+            <dd>Top-level mosaic (metadata) file</dd>
+            <dt><code>ocean_mosaic.nc</code></dt>
+            <dd>Submodel mosaic: atmosphere, ocean, land</dd>
+            <dt><code>ocean_hgrid.nc</code></dt>
+            <dd>Horizontal grid for each submodel</dd>
+            <dt><code>ocean_topog.nc</code></dt>
+            <dd>Ocean bathymetry</dd>
+          </dl>
         </section>
 
         <section>
-          <h3><code>input.nml</code> overview</h3>
-          <p>TODO (this is long)</p>
+          <h3>Additional inputs</h3>
+
+          <dl>
+            <dt><code>atm_ocean_mosaic_tile1Xocn_ocean_mosaic_tile1.nc</code></dt>
+            <dd>Coupling maps between submodels</dd>
+            <dt><code>land_mask.nc</code>, <code>ocean_mask.nc</code></dt>
+            <dd>Mask maps for land and ocean</dd>
+            <dt><code>ocean_vgrid.nc</code></dt>
+            <dd>MOM's vertical grid</dd>
+          </dl>
         </section>
+
+        <section>
+          <h3>Experiment runtime</h3>
+          <p>Set in <code>input.nml</code>:
+          <pre><code data-trim class="fortran">
+&amp;coupler_nml
+    date_init = 1980,1,1,0,0,0
+    months = 0
+    days = 2
+    hours = 0
+    minutes = 0
+    seconds = 0
+    calendar = 'julian'
+    dt_cpld  = 86400
+/
+          </code></pre>
+          <ul>
+            <li>Largest nonzero date used</li>
+            <li>Gregorian, Julian, noleap, and 360day calendars</li>
+            <li><code>MOM_solo</code> uses <code>ocean_solo_nml</code></li>
+          </ul>
+        </section>
+
+        <!-- Model configuration -->
+
+        <section>
+          <h2>Model configuration</h2>
+        </section>
+
+        <section>
+          <h3>Tuning and configuring models</h3>
+					<ul>
+          	<li>This is generaly a <i>very hard problem</i></li>
+          	<li>But most problems come down to numerical instability</li>
+						<li>Most instabilities appear as "saturation vapor pressure"</li>
+					</ul>
+					<pre><code data-trim>
+lookup_es: saturation vapor pressure table overflow, nbad=      1
+					</code></pre>
+        </section>
+
+        <section>
+          <h3>Timesteps</h3>
+					<p>Explicit timesteps parallelise well, but they are inherently
+						 unstable</p>
+          <pre><code data-trim class="fortran">
+&amp;ocean_model_nml
+    dt_ocean = 10800
+    vertical_coordinate='zstar'
+    time_tendency='twolevel'
+    baroclinic_split=1
+    surface_height_split=1
+    barotropic_split=60
+    debug=.false.
+/
+          </code></pre>
+          <p>First try reducing your timesteps</p>
+          </code></pre>
+        </section>
+
+				<section>
+					<h3>Viscosities</h3>
+					<ul>
+						<li>Turbulent systems push energy to small scales</li>
+						<li>... which are aliased to large scales (unstable)</li>
+					</ul>
+					<pre><code data-trim class="fortran">
+&ocean_lap_friction_nml
+  ! lap_friction_scheme='const'
+  lap_friction_scheme='general'
+/
+
+&ocean_lapcst_friction_nml
+  use_this_module=.false.
+  alap = 1e4
+/
+
+&ocean_lapgen_friction_nml
+  use_this_module=.true.
+  k_smag_iso=2.0
+  vel_micom_iso=0.005
+/
+					</code></pre>
+					<p>Note: Biharmonic ($\nabla^4$) viscosities are preferred</p>
+				</section>
 
         <!-- Communication -->
 
@@ -374,6 +484,19 @@ call mpp_sum(pe_tot)
         <section>
           <h3>Generic interfaces</h3>
           <p>Interfaces have been provided for all scenarios</p>
+           <pre><code data-trim class="fortran">
+interface mpp_sum
+    module procedure mpp_sum_int8
+    module procedure mpp_sum_int8_2d
+    module procedure mpp_sum_int8_3d
+    module procedure mpp_sum_int8_4d
+    module procedure mpp_sum_int8_5d
+
+    module procedure mpp_sum_real8
+    module procedure mpp_sum_real8_2d
+    !...
+end interface mpp_sum
+          </code></pre>
           <ul>
             <li>Scalars and vectors (2d, 3d, 4d, 5d)</li>
             <li>Integers, reals, and complex types</li>
@@ -404,7 +527,16 @@ call mpp_sum(pe_tot)
 
         <section>
           <h3>Layout configuration</h3>
-          <p>TODO: go over input.nml</p>
+          <pre><code data-trim class="fortran">
+&amp;ice_model_nml
+  layout = 32, 30
+  io_layout = 1, 30
+/
+&amp;ocean_model_nml
+  layout = 32, 30
+  io_layout = 1, 30
+/
+          </code></pre>
         </section>
 
         <section>
@@ -450,7 +582,7 @@ call mpp_get_global_domain(domain, isg, ieg) ! isg, ieg = -1, 102
 call mpp_get_data_domain(domain, isd, ied) ! isd, ied = -1, 52
 call mpp_get_compute_domain(domain, isc, iec) ! isc, iec = 1, 50
 allocate(a(isd:ied))
-do i = is,ie
+do i = isc, iec
  a(i) = &lt;perform computations&gt;
 end do
 call mpp_update_domains(a, domain)
@@ -460,11 +592,15 @@ call mpp_update_domains(a, domain)
         <!-- Tracer update -->
 
         <section>
-          <h2>Tracer advection</h2>
+          <h2>Subroutine overview</h2>
         </section>
 
         <section>
-          <h3>Tracer scaling</h3>
+          <h3>Performance breakdown at 960 CPUs</h3>
+        </section>
+
+        <section>
+          <h3>Tracer advection</h3>
           <img src="figures/subrt/update_ocean_tracer.svg"
                alt="Tracer update scaling"
                style="background: none; border: none; box-shadow: none;">
@@ -533,11 +669,7 @@ call mpp_update_domains(a, domain)
         <!-- Velocity update -->
 
         <section>
-          <h2>Pre-barotropic acceleration</h2>
-        </section>
-
-        <section>
-          <h3>Acceleration scaling</h3>
+          <h3>Pre-barotropic acceleration</h3>
           <img src="figures/subrt/ocean_explicit_accel_a.svg"
                alt="Acceleration scaling"
                style="background: none; border: none; box-shadow: none;">
@@ -598,10 +730,6 @@ call mpp_update_domains(a, domain)
         <!-- Vertical mixing -->
 
         <section>
-          <h2>Vertical mixing</h2>
-        </section>
-
-        <section>
           <h3>Vertical mixing coefficient</h3>
           <img src="figures/subrt/vert_mix_coeff.svg"
                alt="Vertical mixing scaling"
@@ -637,10 +765,6 @@ call mpp_update_domains(a, domain)
         </section>
 
         <!-- Submesoscale restratification -->
-
-        <section>
-          <h2>Submesoscale</h2>
-        </section>
 
         <section>
           <h3>Submesoscale restratification</h3>
@@ -691,15 +815,12 @@ call mpp_update_domains(a, domain)
             <li>Parameterises the restratification by mesoscale eddies</li>
             <li>
           </ul>
+        </section>
 
         <!-- Barotropic update -->
 
         <section>
-          <h2>Barotropic timestep</h2>
-        </section>
-
-        <section>
-          <h3>Barotropic update scaling</h3>
+          <h3>Barotropic surface update</h3>
           <img src="figures/subrt/update_ocean_barotropic.svg"
                alt="Acceleration scaling"
                style="background: none; border: none; box-shadow: none;">
@@ -740,10 +861,6 @@ $$\begin{align}
 \eta_t &= - \nabla \cdot \mathbf{U}
 \end{align}$$
           </p>
-        </section>
-
-        <section>
-          <h2>All the rest</h2>
         </section>
 
         <section>
