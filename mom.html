@@ -183,6 +183,16 @@
         </section>
 
         <section>
+          <h3>MOM community</h3>
+          <p>The official MOM website:</p>
+          <h3><a href="http://www.mom-ocean.org/">
+              http://www.mom-ocean.org</a></h3>
+          <p>and the mailing list:</p>
+          <h3><a href="https://groups.google.com/forum/#!forum/mom-users">
+              https://groups.google.com/forum/#!forum/mom-users</a></h3>
+        </section>
+
+        <section>
           <h3>MOM source</h3>
           <p>MOM is publicly available and hosted on github:</p>
           <pre><code data-trim class="sh">
@@ -241,6 +251,40 @@ git clone https://github.com/BreakawayLabs/mom.git
         </section>
 
         <section>
+          <h3><code>environs.nci</code></h3>
+          <pre><code data-trim class="csh">
+source /etc/profile.d/nf_csh_modules
+module purge
+module load intel-fc/15.0.3.187
+module load intel-cc/15.0.3.187
+module load netcdf/4.3.3.1
+module load openmpi/1.8.8-debug
+setenv mpirunCommand  "mpirun -np"
+          </code></pre>
+        </section>
+
+        <section>
+          <h3><code>mkmf.template.ia64 header</code></h3>
+          <pre><code data-trim class="csh">
+CPPFLAGS =
+FFLAGS_BASE = -v -V -what -fpp -fno-alias -stack_temps -safe_cray_ptr -ftz -i_dynamic -assume
+ byterecl -g -i4 -r8 -Wp,-w
+FFLAGS_REPRO = -fltconsistency
+FFLAGS_DEBUG = -check -check noarg_temp_created -check nopointer -warn -warn noerrors -debug
+variable_locations -inline_debug_info -fpe0 -traceback -ftrapuv
+FFLAGS = $(FFLAGS_BASE) -O2 -nowarn
+FC = ifort
+CC = icc
+CFLAGS_BASE = -g -D__IFC
+CFLAGS_DEBUG = -ftrapuv -traceback
+CFLAGS = $(CFLAGS_BASE) -O2
+LD = ifort
+LDFLAGS = -Wl,-V,--verbose,-cref,-Map linker.map -lnetcdf -lmpi -lsma
+MAKEFLAGS+=--jobs=8
+          </code></pre>
+        </section>
+
+        <section>
           <h3>Compilation</h3>
           <p>Use the <code>MOM_compile.csh</code> script:
           <pre><code data-trim>
@@ -262,11 +306,11 @@ ${CODEBASE}/exec/${platform}/${type}/fms_${type}.x
         <section>
           <h3>Experiment layout</h3>
           <dl>
-            <dt><code>$expt/</code></dt>
+            <dt><code>./</code></dt>
             <dd>Configuration files (namelists, etc.)</dd>
-            <dt><code>$expt/INPUT/</code></dt>
+            <dt><code>INPUT/</code></dt>
             <dd>Grid data, forcings, input restarts</dd>
-            <dt><code>$expt/RESTART/</code></dt>
+            <dt><code>RESTART/</code></dt>
             <dd>Output restart files (initially empty)</dd>
           </dl>
         </section>
@@ -315,6 +359,55 @@ ${CODEBASE}/exec/${platform}/${type}/fms_${type}.x
         </section>
 
         <section>
+          <h3>Input fields</h3>
+          <p>Defined in <code>data_table</code></p>
+          <pre><code data-trim class="sh">
+"ATM", "p_surf", "SLP", "./INPUT/slp.nc", "bicubic", 1.0
+"ATM", "p_bot", "SLP", "./INPUT/slp.nc", "bicubic", 1.0
+"ATM", "t_bot", "T_10_MOD" , "./INPUT/t_10.nc", "bicubic" ,  1.0
+"ATM", "sphum_bot", "Q_10_MOD" , "./INPUT/q_10.nc", "bicubic" , 1.0
+"ATM", "u_bot", "U_10_MOD", "./INPUT/u_10.nc", "bicubic",  1.0
+"ATM", "v_bot", "V_10_MOD", "./INPUT/v_10.nc", "bicubic",  1.0
+"ATM", "z_bot", "", "", "bicubic", 10.0
+"ATM", "gust", "", "", "bicubic", 0.0
+"ICE", "lw_flux_dn", "LWDN_MOD", "./INPUT/ncar_rad.nc", "bicubic", 1.0
+#"ICE", "sw_flux_dn", "SWDN_MOD" ,"./INPUT/ncar_rad.nc", "bicubic", 1.0
+"ICE" , "sw_flux_vis_dir_dn", "SWDN_MOD", "./INPUT/ncar_rad.nc", "bicubic", 0.285
+"ICE" , "sw_flux_vis_dif_dn", "SWDN_MOD", "./INPUT/ncar_rad.nc", "bicubic", 0.285
+          </code></pre>
+          <p>Format:
+          <pre><code data-trim class="sh">
+submodel, var_name, field_name, filepath, interp_method, scaling
+          </code></pre>
+        </section>
+
+        <section>
+          <h3>Diagnostic output</h3>
+          <pre><code data-trim class="sh">
+MOM4p1_CORE_IAF_v20120531_0849_noRestore_runoff_fix
+1 1 1 0 0 0
+"ocean",        5, "days",   1, "days", "time",
+"ocean_daily", 24, "hours",  1, "days", "time",
+"ocean_grid",  -1, "months", 1, "days", "time",
+#=================================================================
+"ocean_model","geolon_t","geolon_t","ocean","all",.false.,"none",2
+"ocean_model","geolat_t","geolat_t","ocean","all",.false.,"none",2
+"ocean_model","geolon_c","geolon_c","ocean","all",.false.,"none",2
+"ocean_model","geolat_c","geolat_c","ocean","all",.false.,"none",2
+"ocean_model","temp","temp",        "ocean","all",.true.,"none",2
+"ocean_model","salt","salt",        "ocean","all",.true.,"none",2
+"ocean_model","u","u",              "ocean","all",.true.,"none",2
+"ocean_model","v","v",              "ocean","all",.true.,"none",2
+          </code></pre>
+          <p>Format:
+          <pre><code data-trim class="sh">
+file, out_rate, out_units, format, axis_units, axis_name
+#=================================================================
+module, var_name, out_name, file, "all", average, region, format
+          </code></pre>
+        </section>
+
+        <section>
           <h3>Experiment runtime</h3>
           <p>Set in <code>input.nml</code>:
           <pre><code data-trim class="fortran">
@@ -354,25 +447,26 @@ ppm_vlimiter = 3
         <!-- Model configuration -->
 
         <section>
-          <h2>Model configuration</h2>
+          <h2>Troubleshooting</h2>
         </section>
 
         <section>
           <h3>Tuning and configuring models</h3>
-					<ul>
-          	<li>This is generaly a <i>very hard problem</i></li>
-          	<li>But most problems come down to numerical instability</li>
-						<li>Most instabilities appear as "saturation vapor pressure"</li>
-					</ul>
-					<pre><code data-trim>
+          <ul>
+            <li>This is usually a <i>very hard problem</i></li>
+            <li>Most problems come down to numerical instability</li>
+            <li>Coupled instabilites usually appear like this:</li>
+          </ul>
+          <pre><code data-trim>
 lookup_es: saturation vapor pressure table overflow, nbad=      1
-					</code></pre>
+          </code></pre>
+          <p>due to blowup of other variables (e.g. temperature)</p>
         </section>
 
         <section>
           <h3>Timesteps</h3>
-					<p>Explicit timesteps parallelise well, but they are inherently
-						 unstable</p>
+          <p>Explicit timesteps parallelise well, but they are inherently
+             unstable</p>
           <pre><code data-trim class="fortran">
 &amp;ocean_model_nml
     dt_ocean = 10800
@@ -388,13 +482,13 @@ lookup_es: saturation vapor pressure table overflow, nbad=      1
           </code></pre>
         </section>
 
-				<section>
-					<h3>Viscosities</h3>
-					<ul>
-						<li>Turbulent systems push energy to small scales</li>
-						<li>... which are aliased to large scales (unstable)</li>
-					</ul>
-					<pre><code data-trim class="fortran">
+        <section>
+          <h3>Viscosities</h3>
+          <ul>
+            <li>Turbulent systems push energy to small scales</li>
+            <li>... which are aliased to large scales (unstable)</li>
+          </ul>
+          <pre><code data-trim class="fortran">
 &amp;ocean_lap_friction_nml
   ! lap_friction_scheme='const'
   lap_friction_scheme='general'
@@ -410,9 +504,9 @@ lookup_es: saturation vapor pressure table overflow, nbad=      1
   k_smag_iso=2.0
   vel_micom_iso=0.005
 /
-					</code></pre>
-					<p>Note: Biharmonic ($\nabla^4$) viscosities are preferred</p>
-				</section>
+          </code></pre>
+          <p>Note: Biharmonic ($-\nabla^4$) viscosities are preferred</p>
+        </section>
 
         <!-- Communication -->
 
@@ -553,6 +647,7 @@ end interface mpp_sum
   io_layout = 1, 30
 /
           </code></pre>
+          <p>Output files can contain multiple tiles</p>
         </section>
 
         <section>
@@ -594,12 +689,13 @@ end interface mpp_sum
           <pre><code data-trim class="fortran">
 call mpp_define_domains([1, 100], 2, domain, pelist, halo=2)
 
-call mpp_get_global_domain(domain, isg, ieg) ! isg, ieg = -1, 102
-call mpp_get_data_domain(domain, isd, ied) ! isd, ied = -1, 52
+call mpp_get_global_domain(domain, isg, ieg)  ! isg, ieg = -1, 102
+call mpp_get_data_domain(domain, isd, ied)    ! isd, ied = -1, 52
 call mpp_get_compute_domain(domain, isc, iec) ! isc, iec = 1, 50
+
 allocate(a(isd:ied))
 do i = isc, iec
- a(i) = &lt;perform computations&gt;
+    a(i) = &lt;perform computations&gt;
 end do
 call mpp_update_domains(a, domain)
           </code></pre>
@@ -683,15 +779,15 @@ call mpp_update_domains(a, domain)
         </section>
 
         <section>
-					<h3>MDPPM advection</h3>
-					<p>TODO</p>
-				</section>
+          <h3>MDPPM advection</h3>
+          <p>TODO</p>
+        </section>
 
         <section>
-					<h3>Time-implicit vertical diffusion</h3>
-					<p>Uses a tridiagonal solver</p>
-					<p>TODO</p>
-				</section>
+          <h3>Time-implicit vertical diffusion</h3>
+          <p>Uses a tridiagonal solver</p>
+          <p>TODO</p>
+        </section>
 
         <!-- Velocity update -->
 
@@ -754,10 +850,10 @@ call mpp_update_domains(a, domain)
           </section>
         </section>
 
-				<section>
-					<h3>Biharmonic operator</h3>
-					<p>TODO</p>
-				</section>
+        <section>
+          <h3>Biharmonic operator</h3>
+          <p>TODO</p>
+        </section>
 
         <!-- Vertical mixing -->
 
@@ -845,8 +941,11 @@ call mpp_update_domains(a, domain)
           <h3>Submesoscale theory</h3>
           <ul>
             <li>Parameterises the restratification by mesoscale eddies</li>
+            $$\Psi = \left( \frac{C_e \mu h^2 g \Delta s}
+            {\rho_0 L_f \sqrt{f^2 + \tau^{-2}}} \right)
+            \hat{\mathbf{z}} \times \overline{\nabla \gamma}$$
           </ul>
-					<p>TODO</p>
+          <p>TODO</p>
         </section>
 
         <!-- Barotropic update -->
@@ -1021,9 +1120,9 @@ $$\begin{align}
 
         <section>
           <h3>Checksums</h3>
-					<ul>
-						<li><code>debug_this_module = .true.</code></li>
-					</ul>
+          <ul>
+            <li><code>debug_this_module = .true.</code></li>
+          </ul>
         </section>
 
         <!-- configuration -->
