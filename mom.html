@@ -150,15 +150,16 @@
         <section>
           <h3>Split timestepping</h3>
           <p>Ocean stratification yields <i>fast</i> and <i>slow</i> dynamics:
-          $$
-          \mathbf{u} =
-          \left\{ \frac{1}{H} \int_{-H}^\eta \mathbf{u} \right\}
+          $$\begin{align}
+            \mathbf{u} &=
+            \left\{ \frac{1}{H} \int_{-H}^\eta \mathbf{u} \right\}
             + \left\{ \mathbf{u}
-            - \frac{1}{H} \int_{-H}^\eta \mathbf{u} \right\}
-          $$
+            - \frac{1}{H} \int_{-H}^\eta \mathbf{u} \right\} \\
+            &= \mathbf{U} + \mathbf{u}'
+          \end{align}$$
           <ul>
             <li>Depth-averaged dynamics is ~100x faster</li>
-            <li>Acchracy less important; simpler solvers</li>
+            <li>Accuracy less important; simpler solvers</li>
             <li>Additional filtering required</li>
           </ul>
         </section>
@@ -408,6 +409,21 @@ module, var_name, out_name, file, "all", average, region, format
         </section>
 
         <section>
+          <h3>Tracer advection</h3>
+          <p>Advection scheme for each tracer defined in
+          <code>field_table</code>:</p>
+          <pre><code data-trim class="fortran">
+"prog_tracers","ocean_mod","temp"
+horizontal-advection-scheme = mdppm
+vertical-advection-scheme = mdppm
+restart_file  = ocean_temp_salt.res.nc
+ppm_hlimiter = 3
+ppm_vlimiter = 3
+/
+          </code></pre>
+        </section>
+
+        <section>
           <h3>Experiment runtime</h3>
           <p>Set in <code>input.nml</code>:
           <pre><code data-trim class="fortran">
@@ -427,21 +443,6 @@ module, var_name, out_name, file, "all", average, region, format
             <li>Gregorian, Julian, noleap, and 360day calendars</li>
             <li><code>MOM_solo</code> uses <code>ocean_solo_nml</code></li>
           </ul>
-        </section>
-
-        <section>
-          <h3>Tracer advection</h3>
-          <p>Advection scheme for each tracer defined in
-          <code>field_table</code>:</p>
-          <pre><code data-trim class="fortran">
-"prog_tracers","ocean_mod","temp"
-horizontal-advection-scheme = mdppm
-vertical-advection-scheme = mdppm
-restart_file  = ocean_temp_salt.res.nc
-ppm_hlimiter = 3
-ppm_vlimiter = 3
-/
-          </code></pre>
         </section>
 
         <!-- Model configuration -->
@@ -470,12 +471,11 @@ lookup_es: saturation vapor pressure table overflow, nbad=      1
           <pre><code data-trim class="fortran">
 &amp;ocean_model_nml
     dt_ocean = 10800
-    vertical_coordinate='zstar'
-    time_tendency='twolevel'
-    baroclinic_split=1
-    surface_height_split=1
-    barotropic_split=60
-    debug=.false.
+    vertical_coordinate = 'zstar'
+    time_tendency = 'twolevel'
+    baroclinic_split = 1
+    surface_height_split = 1
+    barotropic_split = 60
 /
           </code></pre>
           <p>First try reducing your timesteps</p>
@@ -506,6 +506,20 @@ lookup_es: saturation vapor pressure table overflow, nbad=      1
 /
           </code></pre>
           <p>Note: Biharmonic ($-\nabla^4$) viscosities are preferred</p>
+        </section>
+
+        <section>
+          <h3>Feedbacks</h3>
+          <p>Physical processes can yield unstable responses:
+          <ul>
+            <li>Sea ice melt</li>
+            <li>River runoff</li>
+            <li>Accumulation in narrow straits</li>
+            <li>Evaporation in shallow seas</li>
+          </ul>
+          <p>Many parameterisations also have inherent numerical
+          instabilities</p>
+          <p>At this point, you're on your own...</p>
         </section>
 
         <!-- Communication -->
@@ -701,6 +715,124 @@ call mpp_update_domains(a, domain)
           </code></pre>
         </section>
 
+        <section>
+          <h3>Miscellaneous</h3>
+        </section>
+
+        <section>
+          <h3>Internal profiler</h3>
+          <dl>
+            <dt>mpp_clock_id</dt>
+            <dd>Define a new clock</dd>
+            <dt>mpp_clock_begin</dt>
+            <dd>Start timer</dd>
+            <dt>mpp_clock_end</dt>
+            <dd>Stop timer</dd>
+          </dl>
+          <p>Based on <code>system_clock</code></p>
+        </section>
+
+        <section>
+          <h3>Profiler example</h3>
+          <pre><code data-trim class="fortran">
+initClock = mpp_clock_id('Init')
+call mpp_clock_begin(initClock)
+
+call fms_init
+call constants_init
+call coupler_init
+
+call mpp_set_current_peset()
+
+call mpp_clock_end(initClock)
+          </code></pre>
+          <p>Report in standard out:</p>
+          <pre><code data-trim>
+.     tmin    tmax    tavg    tstd   tfrac  grain  pemin pemax
+Init  41.135  41.142  41.139  0.002  0.154  0      0     959
+          </code></pre>
+        </section>
+
+        <section>
+          <h3>Bit reproducibility</h3>
+          <p>MOM is largely bit reproducible, with a few conditions:
+          <ul>
+            <li>Collectives (e.g. <code>mpp_sum</code> are
+              <i>not</i> reproducible!</li>
+            <li>Dynamic parts requiring collectives will have special flags:
+              <pre><code data-trim class="fortran">
+&ocean_sbc_nml
+    do_bitwise_exact_sum=.true.
+/
+              </code></pre>
+              Note that these are generally much slower
+            </li>
+            <li>Diagnostics using collectives are generally not
+              reproducible</li>
+            <li>Raijin required this compiler flag:
+              <pre><code data-trim class="fortran">
+mpifort &lt;...&gt; -align all
+              </code></pre>
+              probably due to int4 vs real8 alignment
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h3>Bit reproducibility across layouts</h3>
+          <p>Reproducibility for different tiles is generally <i>never</i>
+            reproducible, with a few exceptions</p>
+          <li>Coupler flux exchange can be made independent of layout:
+            <pre><code data-trim class="fortran">
+&xgrid_nml
+  make_exchange_reproduce=.true.
+/
+            </code></pre>
+            Note that this is very slow!
+          </li>
+        </section>
+
+        <!--
+        <section>
+          <h3>Checksums</h3>
+          <ul>
+            <li><code>debug_this_module = .true.</code></li>
+          </ul>
+        </section>
+        -->
+
+        <section>
+          <h3>Diagnostics</h3>
+          <dl>
+            <dt><code>register_diag_field</code></dt>
+            <dd>Register the diagnostic, return an ID</dd>
+            <dt><code>send_data</code></dt>
+            <dd>Send data to diagnostic manager</dd>
+            <dt><code>diagnose_{2d,3d}{,_u}</code></dt>
+            <dd>Wrapper to <code>send_data</code> for masked fields</dd>
+          </dl>
+        </section>
+
+        <section>
+          <h3>Diagnostics example</h3>
+          <pre><code data-trim class="fortran">
+id_u(1) = register_diag_field ('ocean_model', 'u', &
+              Grd%vel_axes_u(1:3), Time%model_time, &
+              'i-current', 'm/sec', &
+              missing_value=missing_value, &
+              range=(/-10.0,10.0/), &
+              standard_name='sea_water_x_velocity')
+
+call diagnose_3d_u(Time, Grd, id_u(1), Velocity%u(:,:,:,1,tau))
+
+if (id_u(1) > 0) used = send_data (id_u(1), &
+                         Velocity%u(:,:,:,1,tau), &
+                         Time%model_time, rmask=Grd%mask(:,:,:), &
+                         is_in=isc, js_in=jsc, ks_in=1, &
+                         ie_in=iec, je_in=jec, ke_in=nk)
+          </code></pre>
+        </section>
+
         <!-- Tracer update -->
 
         <section>
@@ -708,7 +840,10 @@ call mpp_update_domains(a, domain)
         </section>
 
         <section>
-          <h3>Performance breakdown at 960 CPUs</h3>
+          <h3>Relative breakdown</h3>
+          <img src="figures/pie.svg"
+               alt="Subroutine breakdown"
+               style="background: none; border: none; box-shadow: none;">
         </section>
 
         <section>
@@ -778,10 +913,12 @@ call mpp_update_domains(a, domain)
           </section>
         </section>
 
+        <!--
         <section>
           <h3>MDPPM advection</h3>
           <p>TODO</p>
         </section>
+        -->
 
         <section>
           <h3>Time-implicit vertical diffusion</h3>
@@ -850,10 +987,12 @@ call mpp_update_domains(a, domain)
           </section>
         </section>
 
+        <!--
         <section>
           <h3>Biharmonic operator</h3>
           <p>TODO</p>
         </section>
+        -->
 
         <!-- Vertical mixing -->
 
@@ -937,6 +1076,7 @@ call mpp_update_domains(a, domain)
           </section>
         </section>
 
+        <!--
         <section>
           <h3>Submesoscale theory</h3>
           <ul>
@@ -947,6 +1087,7 @@ call mpp_update_domains(a, domain)
           </ul>
           <p>TODO</p>
         </section>
+        -->
 
         <!-- Barotropic update -->
 
@@ -1083,46 +1224,36 @@ $$\begin{align}
                style="background: none; border: none; box-shadow: none;">
         </section>
 
-        <!-- Miscellaneous -->
-
+        <!-- Future work -->
         <section>
-          <h2>Miscellaneous</h2>
-        </section>
-
-        <section>
-          <h3>Diagnostics</h3>
+          <h3>Focus for the future</h3>
           <ul>
-            <li>register_diag</li>
-            <li>...</li>
-          </ul>
-        </section>
-
-        <section>
-          <h3>Internal profiler</h3>
-          <p>TODO: mpp_clock stuff</p>
-        </section>
-
-        <section>
-          <h3>Bit reproducibility</h3>
-          <ul>
-            <li>Point-to-point is reproducible</li>
-            <li>Collectives are not on default</li>
-            <li>Model configuration
-              <p>TODO</p>
-            </li>
-            <li>Compilation:
+            <li>Barotropic solver and filter</li>
+            <li>Tracer advection</li>
+            <li>Biharmonic viscosity</li>
+            <li>Diagnostics</li>
+            <li>Initialization runtime</li>
+            <li>Fix these functions:
               <ul>
-                <li><code>--align all</code></li>
+                <li><code>mpp_global_field</code></li>
+                <li><code>psi_compute</code></li>
+                <li><code>ncar_rescale</code></li>
               </ul>
             </li>
           </ul>
         </section>
 
         <section>
-          <h3>Checksums</h3>
-          <ul>
-            <li><code>debug_this_module = .true.</code></li>
-          </ul>
+          <h3>psi_compute</h3>
+          <p><img src="figures/streamfunction.svg"
+                  style="float: left; width: 60%;"
+                  alt="Streamfunction messages">
+          </p>
+          <p>Integration of
+            $$\psi = \int_0^y u dy$$
+          for tile must collect
+          values to the south</p>
+          <p style="clear: both;">$N_\text{msg} \approx \frac{1}{2} N_x N_y^2$</p>
         </section>
 
         <!-- configuration -->
